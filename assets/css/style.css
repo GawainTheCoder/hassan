@@ -56,6 +56,17 @@ header h1 {
     margin: 0;
 }
 
+/* Remove link styling from site title */
+.site-title {
+    color: inherit; /* Inherit color from h1 */
+    text-decoration: none; /* Remove underline */
+}
+
+.site-title:hover {
+    text-decoration: none; /* Ensure no underline on hover */
+    color: inherit;
+}
+
 nav {
     display: flex;
     gap: 20px;
@@ -186,6 +197,21 @@ input[type="submit"]:hover,
     background-color: var(--primary);
     color: white;
     text-decoration: none;
+}
+
+/* Specific styling for hero section secondary button */
+.hero .btn-secondary {
+    background-color: var(--accent); /* Use accent color for background */
+    color: var(--secondary); /* Use secondary color for text for contrast */
+    border-color: var(--accent); /* Match border to background */
+}
+
+.hero .btn-secondary:hover {
+    background-color: var(--secondary); /* Match primary hover background */
+    border-color: var(--secondary);   /* Match primary hover border */
+    color: white;                     /* Ensure text is white on dark hover */
+    transform: translateY(-2px);      /* Add lift effect */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow effect */
 }
 
 /* Portfolio items */
