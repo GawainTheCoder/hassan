@@ -5,7 +5,6 @@ include 'includes/config.php';
 include 'includes/functions.php';
 
 $error = '';
-$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
@@ -25,7 +24,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'user')");
             if ($stmt->execute([$username, $password_hash])) {
-                $success = "Registration successful. You can now <a href='login.php'>login</a>.";
+                // Get the user ID that was just created
+                $user_id = $pdo->lastInsertId();
+                
+                // Set session variables to log user in automatically
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                $_SESSION['role'] = 'user';
+                
+                // Redirect to user portfolio page
+                header("Location: user_portfolio.php");
+                exit;
             } else {
                 $error = "Registration failed. Please try again.";
             }
@@ -39,9 +48,6 @@ include 'includes/header.php';
 <h2>Register</h2>
 <?php if ($error): ?>
     <p style="color:red;"><?php echo $error; ?></p>
-<?php endif; ?>
-<?php if ($success): ?>
-    <p style="color:green;"><?php echo $success; ?></p>
 <?php endif; ?>
 <form action="register.php" method="post">
     <label>Username:</label>

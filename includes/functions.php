@@ -1,6 +1,9 @@
 <?php
 // includes/functions.php
 
+// Define development mode
+define('DEVELOPMENT_MODE', true); // Set to false in production
+
 /**
  * Display a stylized alert message
  * 
@@ -99,6 +102,60 @@ function truncate_text($text, $length = 100, $append = '...') {
 }
 
 /**
+ * Debug helper function
+ * 
+ * @param mixed $data The data to output
+ * @param boolean $die Whether to stop execution after debugging
+ */
+function debug($data, $die = false) {
+    echo '<pre style="background-color: #f5f5f5; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin: 20px; overflow: auto;">';
+    print_r($data);
+    echo '</pre>';
+    
+    if ($die) {
+        die('Debug terminated');
+    }
+}
+
+/**
+ * Create database tables if they don't exist
+ * 
+ * @param PDO $pdo Database connection
+ */
+function ensure_tables_exist($pdo) {
+    try {
+        // Check if portfolio_items table exists
+        $tableExists = $pdo->query("SHOW TABLES LIKE 'portfolio_items'")->rowCount() > 0;
+        
+        if ($tableExists) {
+            // Check if category column exists in portfolio_items table
+            $result = $pdo->query("SHOW COLUMNS FROM portfolio_items LIKE 'category'");
+            
+            if ($result && $result->rowCount() === 0) {
+                // Add category column if it doesn't exist
+                $pdo->exec("ALTER TABLE portfolio_items ADD COLUMN category VARCHAR(50) DEFAULT 'web-design'");
+                error_log("Added missing 'category' column to portfolio_items table");
+            }
+        } else {
+            // Create portfolio_items table with all necessary columns
+            $pdo->exec("CREATE TABLE IF NOT EXISTS portfolio_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                image_path VARCHAR(255),
+                category VARCHAR(50) DEFAULT 'web-design',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )");
+            error_log("Created portfolio_items table");
+        }
+    } catch (PDOException $e) {
+        error_log("Database schema update failed: " . $e->getMessage());
+    }
+}
+
+/**
  * Handle fatal PHP errors and display them nicely
  */
 function register_shutdown_function_handler() {
@@ -138,6 +195,62 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
     
     return false; // Let PHP handle other errors
 });
+
+/**
+ * Validate if a file is an acceptable image
+ * 
+ * @param array $file The uploaded file array ($_FILES['image'])
+ * @return array [success, message]
+ */
+function validate_image_file($file) {
+    // Check if file was uploaded
+    if (!isset($file) || $file['error'] != UPLOAD_ERR_OK) {
+        return [false, get_upload_error_message($file['error'])];
+    }
+    
+    // Check file size (max 5MB)
+    if ($file['size'] > 5 * 1024 * 1024) {
+        return [false, "File is too large. Maximum size is 5MB."];
+    }
+    
+    // Get file info
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']);
+    
+    // Define allowed image types
+    $allowed_types = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/bmp' => 'bmp',
+        'image/webp' => 'webp'
+    ];
+    
+    // Check MIME type
+    if (!array_key_exists($mime, $allowed_types)) {
+        return [false, "Only image files are allowed (JPG, PNG, GIF, BMP, WEBP)."];
+    }
+    
+    // Return success
+    return [true, "File is valid"];
+}
+
+/**
+ * Get readable category name from slug
+ * 
+ * @param string $category_slug The category slug
+ * @return string The readable category name
+ */
+function get_category_name($category_slug) {
+    $categories = [
+        'web-design' => 'Web Design',
+        'graphic-design' => 'Graphic Design',
+        'photography' => 'Photography',
+        'illustration' => 'Illustration'
+    ];
+    
+    return $categories[$category_slug] ?? $category_slug;
+}
 
 // Add more helper functions as required.
 ?>

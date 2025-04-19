@@ -1,24 +1,21 @@
 <?php
 // includes/config.php
-$db_path = __DIR__ . '/../data/portfolio.sqlite';
-$db_dir = dirname($db_path);
-
-// Create the data directory if it doesn't exist
-if (!is_dir($db_dir)) {
-    mkdir($db_dir, 0755, true);
-}
+$host = 'localhost';
+$dbname = 'portfolio_db';
+$user = 'root';
+$pass = ''; // Default XAMPP has no password, change if needed
+$port = 3306;
 
 try {
-    // Connect to SQLite database
-    $pdo = new PDO('sqlite:' . $db_path);
+    // Connect to MySQL database
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Enable foreign keys in SQLite
-    $pdo->exec('PRAGMA foreign_keys = ON;');
+    // Make sure database tables have all the required columns
+    if (function_exists('ensure_tables_exist')) {
+        ensure_tables_exist($pdo);
+    }
     
-    // Create tables if they don't exist
-    $schema = file_get_contents(__DIR__ . '/../sql/schema.sql');
-    $pdo->exec($schema);
 } catch (PDOException $e) {
     die("DB Connection failed: " . $e->getMessage());
 }
